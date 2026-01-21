@@ -25,13 +25,16 @@ class LoggerService:
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
         
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        console_handler = logging.StreamHandler()
+        
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+        
         logging.basicConfig(
             level=log_level,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler(log_file),
-                logging.StreamHandler()
-            ]
+            handlers=[file_handler, console_handler]
         )
         
         self.logger = logging.getLogger(__name__)

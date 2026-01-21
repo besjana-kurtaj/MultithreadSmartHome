@@ -1,5 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 import json
+import logging
+import os
 from typing import Dict, Any, Optional
 
 
@@ -8,9 +10,12 @@ class SmartHomeWebApp:
     def __init__(self, hub, config: Dict[str, Any]):
         self.hub = hub
         self.config = config
-        import os
         template_dir = os.path.join(os.path.dirname(__file__), 'templates')
         self.app = Flask(__name__, template_folder=template_dir)
+        
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
+        
         self._setup_routes()
         
     def _setup_routes(self):
@@ -65,5 +70,8 @@ class SmartHomeWebApp:
         port = flask_config.get('port', 5000)
         debug = flask_config.get('debug', False)
         
-        self.app.run(host=host, port=port, debug=debug, threaded=True)
+        import warnings
+        warnings.filterwarnings('ignore', category=UserWarning)
+        
+        self.app.run(host=host, port=port, debug=debug, threaded=True, use_reloader=False)
 

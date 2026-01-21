@@ -11,7 +11,7 @@ class LightActuator(Actuator):
         
     def _on_state_change(self, old_state: bool, new_state: bool):
         status = "ON" if new_state else "OFF"
-        self.logger.info(f"💡 {self.name} turned {status}")
+        self.logger.info(f"{self.name} turned {status}")
         
     def _execute_command(self, command: Dict[str, Any]):
         if 'action' in command:
@@ -40,7 +40,7 @@ class HeaterActuator(Actuator):
         
     def _on_state_change(self, old_state: bool, new_state: bool):
         status = "ON" if new_state else "OFF"
-        self.logger.info(f"🔥 {self.name} turned {status} (target: {self.target_temperature}°C)")
+        self.logger.info(f"{self.name} turned {status} (target: {self.target_temperature}°C)")
         
     def _execute_command(self, command: Dict[str, Any]):
         if 'action' in command:
@@ -70,9 +70,9 @@ class AlarmActuator(Actuator):
         
     def _on_state_change(self, old_state: bool, new_state: bool):
         if new_state:
-            self.logger.warning(f"🚨 {self.name} ACTIVATED!")
+            self.logger.warning(f"{self.name} ACTIVATED!")
         else:
-            self.logger.info(f"🔕 {self.name} deactivated")
+            self.logger.info(f"{self.name} deactivated")
             
     def _execute_command(self, command: Dict[str, Any]):
         if 'action' in command:
