@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Hub - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.running {
+            background-color: #28a745;
+        }
+        
+        .status-indicator.stopped {
+            background-color: #dc3545;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 5px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .sensor-value {
+            font-size: 2em;
+            font-weight: 600;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .sensor-unit {
+            font-size: 0.6em;
+            color: #999;
+            margin-left: 5px;
+        }
+        
+        .actuator-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .motion-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .motion-indicator.active {
+            background-color: #dc3545;
+        }
+        
+        .motion-indicator.inactive {
+            background-color: #6c757d;
+        }
+        
+        .timestamp {
+            font-size: 0.75em;
+            color: #999;
+            margin-top: 10px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart Home Hub</h1>
+            <p>
+                <span class="status-indicator" id="systemStatus"></span>
+                <span id="systemStatusText">Loading...</span>
+            </p>
+        </header>
+        
+        <div class="dashboard" id="dashboard">
+            <!-- Content will be dynamically generated -->
+        </div>
+    </div>
+    
+    <script>
+        let updateInterval;
+        
+        function updateDashboard() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                        return;
+                    }
+                    
+                    updateSystemStatus(data.running);
+                    renderSensors(data.sensors);
+                    renderActuators(data.actuators);
+                })
+                .catch(error => {
+                    console.error('Error fetching status:', error);
+                    showError('Failed to fetch system status');
+                });
+        }
+        
+        function updateSystemStatus(running) {
+            const indicator = document.getElementById('systemStatus');
+            const text = document.getElementById('systemStatusText');
+            
+            if (running) {
+                indicator.className = 'status-indicator running';
+                text.textContent = 'System Running';
+            } else {
+                indicator.className = 'status-indicator stopped';
+                text.textContent = 'System Stopped';
+            }
+        }
+        
+        function renderSensors(sensors) {
+            const dashboard = document.getElementById('dashboard');
+            let html = '';
+            
+            // Temperature Sensor
+            if (sensors.temperature) {
+                const temp = sensors.temperature.value;
+                html += `
+                    <div class="card">
+                        <h2>🌡️ Temperature Sensor</h2>
+                        <div class="sensor-value">
+                            ${temp !== null ? temp.toFixed(1) : 'N/A'}
+                            <span class="sensor-unit">°C</span>
+                        </div>
+                        <div class="timestamp">Last updated: ${new Date().toLocaleTimeString()}</div>
+                    </div>
+                `;
+            }
+            
+            // Light Sensor
+            if (sensors.light) {
+                const light = sensors.light.value;
+                html += `
+                    <div class="card">
+                        <h2>💡 Light Sensor</h2>
+                        <div class="sensor-value">
+                            ${light !== null ? light.toFixed(1) : 'N/A'}
+                            <span class="sensor-unit">%</span>
+                        </div>
+                        <div class="timestamp">Last updated: ${new Date().toLocaleTimeString()}</div>
+                    </div>
+                `;
+            }
+            
+            // Motion Sensor
+            if (sensors.motion) {
+                const motion = sensors.motion.value;
+                html += `
+                    <div class="card">
+                        <h2>🚶 Motion Sensor</h2>
+                        <div class="sensor-value">
+                            ${motion ? 'Motion Detected' : 'No Motion'}
+                            <span class="motion-indicator ${motion ? 'active' : 'inactive'}"></span>
+                        </div>
+                        <div class="timestamp">Last updated: ${new Date().toLocaleTimeString()}</div>
+                    </div>
+                `;
+            }
+            
+            dashboard.innerHTML = html + dashboard.innerHTML.split('</div>').slice(-1)[0];
+        }
+        
+        function renderActuators(actuators) {
+            const dashboard = document.getElementById('dashboard');
+            let html = '';
+            
+            // Light Actuator
+            if (actuators.light) {
+                const state = actuators.light.state;
+                html += `
+                    <div class="card">
+                        <h2>💡 Light Control</h2>
+                        <div class="actuator-control">
+                            <span>Light: ${state ? 'ON' : 'OFF'}</span>
+                            <label class="switch">
+                                <input type="checkbox" ${state ? 'checked' : ''} 
+                                       onchange="controlActuator('light', this.checked ? 'turn_on' : 'turn_off')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Heater Actuator
+            if (actuators.heater) {
+                const state = actuators.heater.state;
+                html += `
+                    <div class="card">
+                        <h2>🔥 Heater Control</h2>
+                        <div class="actuator-control">
+                            <span>Heater: ${state ? 'ON' : 'OFF'}</span>
+                            <label class="switch">
+                                <input type="checkbox" ${state ? 'checked' : ''} 
+                                       onchange="controlActuator('heater', this.checked ? 'turn_on' : 'turn_off')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Alarm Actuator
+            if (actuators.alarm) {
+                const state = actuators.alarm.state;
+                html += `
+                    <div class="card">
+                        <h2>🚨 Alarm Control</h2>
+                        <div class="actuator-control">
+                            <span>Alarm: ${state ? 'ACTIVE' : 'INACTIVE'}</span>
+                            <label class="switch">
+                                <input type="checkbox" ${state ? 'checked' : ''} 
+                                       onchange="controlActuator('alarm', this.checked ? 'activate' : 'deactivate')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Find the last card and append actuators before it
+            const cards = dashboard.querySelectorAll('.card');
+            if (cards.length > 0) {
+                const lastCard = cards[cards.length - 1];
+                lastCard.insertAdjacentHTML('afterend', html);
+            } else {
+                dashboard.innerHTML = html;
+            }
+        }
+        
+        function controlActuator(actuatorName, action) {
+            fetch(`/api/actuator/${actuatorName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                } else {
+                    console.log('Command sent:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error controlling actuator:', error);
+                showError('Failed to control actuator');
+            });
+        }
+        
+        function showError(message) {
+            const dashboard = document.getElementById('dashboard');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            dashboard.insertBefore(errorDiv, dashboard.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+        
+        // Start auto-update
+        updateDashboard();
+        updateInterval = setInterval(updateDashboard, 2000); // Update every 2 seconds
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>
+
