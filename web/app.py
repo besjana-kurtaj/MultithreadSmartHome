@@ -64,6 +64,30 @@ class SmartHomeWebApp:
         def get_config():
             return jsonify(self.config)
             
+        @self.app.route('/api/system/control', methods=['POST'])
+        def control_system():
+            try:
+                data = request.get_json() or {}
+                action = data.get('action', 'toggle')
+                
+                if action == 'stop':
+                    self.hub.stop()
+                    return jsonify({'success': True, 'message': 'System stopped', 'running': False})
+                elif action == 'start':
+                    self.hub.start()
+                    return jsonify({'success': True, 'message': 'System started', 'running': True})
+                else:
+                    # Toggle
+                    if self.hub._running:
+                        self.hub.stop()
+                        return jsonify({'success': True, 'message': 'System stopped', 'running': False})
+                    else:
+                        self.hub.start()
+                        return jsonify({'success': True, 'message': 'System started', 'running': True})
+                        
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+            
     def run(self):
         flask_config = self.config.get('flask', {})
         host = flask_config.get('host', '127.0.0.1')

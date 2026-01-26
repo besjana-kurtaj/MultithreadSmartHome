@@ -176,11 +176,23 @@
 <body>
     <div class="container">
         <header>
-            <h1>Smart Home Hub</h1>
-            <p>
-                <span class="status-indicator" id="systemStatus"></span>
-                <span id="systemStatusText">Loading...</span>
-            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Smart Home Hub</h1>
+                    <p>
+                        <span class="status-indicator" id="systemStatus"></span>
+                        <span id="systemStatusText">Loading...</span>
+                    </p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span id="systemControlLabel" style="font-size: 0.9em; color: #666;">System Control:</span>
+                    <label class="switch">
+                        <input type="checkbox" id="systemControlSwitch" 
+                               onchange="controlSystem(this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
         </header>
         
         <div class="dashboard" id="dashboard">
@@ -213,14 +225,55 @@
         function updateSystemStatus(running) {
             const indicator = document.getElementById('systemStatus');
             const text = document.getElementById('systemStatusText');
+            const switchControl = document.getElementById('systemControlSwitch');
             
             if (running) {
                 indicator.className = 'status-indicator running';
                 text.textContent = 'System Running';
+                if (switchControl) {
+                    switchControl.checked = true;
+                }
             } else {
                 indicator.className = 'status-indicator stopped';
                 text.textContent = 'System Stopped';
+                if (switchControl) {
+                    switchControl.checked = false;
+                }
             }
+        }
+        
+        function controlSystem(isOn) {
+            const action = isOn ? 'start' : 'stop';
+            fetch('/api/system/control', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                    // Revert switch state
+                    const switchControl = document.getElementById('systemControlSwitch');
+                    if (switchControl) {
+                        switchControl.checked = !isOn;
+                    }
+                } else {
+                    console.log('System control:', data.message);
+                    updateSystemStatus(data.running);
+                }
+            })
+            .catch(error => {
+                console.error('Error controlling system:', error);
+                showError('Failed to control system');
+                // Revert switch state
+                const switchControl = document.getElementById('systemControlSwitch');
+                if (switchControl) {
+                    switchControl.checked = !isOn;
+                }
+            });
         }
         
         function renderSensors(sensors) {
